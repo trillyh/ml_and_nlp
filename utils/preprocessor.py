@@ -1,3 +1,4 @@
+
 import nltk
 from typing import List 
 import re
@@ -30,6 +31,7 @@ class Preprocessor:
             print("Error occurred when tokenizing words")
 
         tokenized_list_words.clear() # free mem
+        self.stem(clean_list_words)
         return clean_list_words
 
     def remove_unrelated(self, list_words: List[str]):
@@ -49,7 +51,6 @@ class Preprocessor:
         return tokenized_list_words
         
     def remove_stopword_and_punctuation(self, tokenized_list_words: List[List[str]]) -> List[List[str]]:
-        nltk.download('stopwords')
         # Import stopwords in English
         stopwords_english = stopwords.words("english")
 
@@ -66,13 +67,15 @@ class Preprocessor:
 
     def stem(self, clean_list_words: List[List[str]]):
         stemmer = PorterStemmer()  
-        for words in clean_list_words:
-            for word in words:
-                word = stemmer.stem(word)
+        for w in range(len(clean_list_words)):
+            for i in range(len(clean_list_words[w])):
+                clean_list_words[w][i] = stemmer.stem(clean_list_words[w][i])
+
 """
 Use for testing
 """
 if __name__ == "__main__":
+    nltk.download('stopwords')
     preprocessor = Preprocessor()
     
     # Test data
@@ -95,4 +98,8 @@ if __name__ == "__main__":
     cleaned = preprocessor.remove_stopword_and_punctuation(tokenized)
     print("After remove_stopword_and_punctuation:", cleaned)
 
+    preprocessor.stem(cleaned)
+    print("After stem", cleaned)
 
+    cleaned_list_words = preprocessor.preprocess(test_list.copy())
+    print("All together", cleaned_list_words)
