@@ -1,6 +1,6 @@
 
 import nltk
-from typing import List 
+from typing import List
 import re
 import string
 from nltk.tokenize import TweetTokenizer
@@ -9,67 +9,52 @@ from nltk.stem import PorterStemmer
 
 class Preprocessor:
 
-    def preprocess(self, list_words: List[str]) -> List[List[str]]:
-        list_words2 = list_words.copy()
+    def preprocess(self, words: str) -> List[str]:
         try:
-            self.remove_unrelated(list_words2)
+            words = self.remove_unrelated(words)
         except:
-            print("Error occurred when removing unrealted word using Regex")
+            print("Error occurred when removing unrelated words using Regex")
 
         print("Removed unrelated words")
 
-        tokenized_list_words: List[List[str]] = []
         try:
-            tokenized_list_words = self.tokenize(list_words2)
+            tokenized_words = self.tokenize(words)
         except:
             print("Error occurred when tokenizing words")
+            return [] # avoid unbound error
 
-        clean_list_words: List[List[str]] = []
         try:
-            clean_list_words = self.remove_stopword_and_punctuation(tokenized_list_words) 
+            clean_words = self.remove_stopword_and_punctuation(tokenized_words)
         except:
-            print("Error occurred when tokenizing words")
+            print("Error occurred when removing stopwords and punctuation")
+            return [] # avoid unbound error
 
-        tokenized_list_words.clear() # free mem
-        self.stem(clean_list_words)
-        return clean_list_words
+        self.stem(clean_words)
+        return clean_words
 
-    def remove_unrelated(self, list_words: List[str]):
-        for i in range(len(list_words)):
-            words = list_words[i]
-            clean_words = re.sub(r'^RT[\s]+', '', words)
-            clean_words = re.sub(r'https?://[^\s\n\r]+', '', clean_words)
-            clean_words = re.sub(r'#', '', clean_words)
-            list_words[i] = clean_words
+    def remove_unrelated(self, words: str) -> str:
+        words = re.sub(r'^RT[\s]+', '', words)
+        words = re.sub(r'https?://[^\s\n\r]+', '', words)
+        words = re.sub(r'#', '', words)
+        return words
 
-    def tokenize(self, list_words: List[str]) -> List[List[str]]:
-        tokenized_list_words: List[List[str]] = []
+    def tokenize(self, words: str) -> List[str]:
         tokenizer = TweetTokenizer(preserve_case=False, strip_handles=True, reduce_len=True)
-        for words in list_words:
-            tokenized_list_words.append(tokenizer.tokenize(words))
+        return tokenizer.tokenize(words)
         
-        return tokenized_list_words
-        
-    def remove_stopword_and_punctuation(self, tokenized_list_words: List[List[str]]) -> List[List[str]]:
-        # Import stopwords in English
-        stopwords_english = stopwords.words("english")
+    def remove_stopword_and_punctuation(self, tokenized_words: List[str]) -> List[str]:
+        stopwords_english = set(stopwords.words("english"))
+        clean_words = []
+        for word in tokenized_words:
+            if (word not in stopwords_english
+                and word not in string.punctuation):
+                clean_words.append(word)
+        return clean_words
 
-        clean_lists_words: List[List[str]] = []
-        for words in tokenized_list_words:
-            inner_list_word = []
-            for word in words:
-                if (word not in stopwords_english
-                    and word not in string.punctuation):
-                    inner_list_word.append(word)
-            clean_lists_words.append(inner_list_word)
-
-        return clean_lists_words
-
-    def stem(self, clean_list_words: List[List[str]]):
+    def stem(self, clean_words: List[str]):
         stemmer = PorterStemmer()  
-        for w in range(len(clean_list_words)):
-            for i in range(len(clean_list_words[w])):
-                clean_list_words[w][i] = stemmer.stem(clean_list_words[w][i])
+        for i in range(len(clean_words)):
+            clean_words[i] = stemmer.stem(clean_words[i])
 
 """
 Use for testing
@@ -79,27 +64,26 @@ if __name__ == "__main__":
     preprocessor = Preprocessor()
     
     # Test data
-    test_list = [
+    test_tweet = "RT This is a tweet! Check out https://example.com #hashtag"
+    test_tweets = [
         "RT This is a tweet! Check out https://example.com #hashtag",
         "Another tweet @user with more text. Visit https://example.com for more info!",
-        "Just a simple tweet."
+        "Just a simple tweet.",
+        "RT Testing another tweet. Visit http://example.com #testing",
+        "Here's a tweet with some #random #hashtags and a URL https://test.com",
+        "Yet another tweet, RT it if you like! https://link.com",
+        "Tweeting about #AI and #ML. Check this out https://ai.example.com",
+        "RT This is great! #amazing https://great.com",
+        "Learning Python is fun! Visit https://python.org",
+        "This is the last test tweet! https://test.com #end"
     ]
 
-    # Test remove_unrelated
-    test_remove_unrelated = test_list.copy()
-    preprocessor.remove_unrelated(test_remove_unrelated)
-    print("After remove_unrelated:", test_remove_unrelated)
-    
-    # Test tokenize
-    tokenized = preprocessor.tokenize(test_remove_unrelated)
-    print("After tokenize:", tokenized)
-    
-    # Test remove_stopword_and_punctuation
-    cleaned = preprocessor.remove_stopword_and_punctuation(tokenized)
-    print("After remove_stopword_and_punctuation:", cleaned)
+    # Test single tweet
+    print("\nSingle Tweet Test:")
+    cleaned_words = preprocessor.preprocess(test_tweet)
+    print("All together:", cleaned_words)
 
-    preprocessor.stem(cleaned)
-    print("After stem", cleaned)
-
-    cleaned_list_words = preprocessor.preprocess(test_list.copy())
-    print("All together", cleaned_list_words)
+    # Test multiple tweets
+    print("\nMultiple Tweets Test:")
+    for i, tweet in enumerate(test_tweets):
+        print(f"{i} {preprocessor.preprocess(tweet)}")
