@@ -15,8 +15,6 @@ class Preprocessor:
         except:
             print("Error occurred when removing unrelated words using Regex")
 
-        print("Removed unrelated words")
-
         try:
             tokenized_words = self.tokenize(words)
         except:
